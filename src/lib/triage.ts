@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 export interface TriagePayload {
   chief_complaint: string;
   symptoms: string[];
+  body_regions?: string[];
   duration_days?: number;
   severity?: number;
   age?: number;
@@ -14,6 +15,20 @@ export interface TriagePayload {
   vitals?: Record<string, number | undefined>;
 }
 
+export interface SuggestedMedicine {
+  name: string;
+  type: "OTC" | "Prescription" | string;
+  dosage: string;
+  purpose: string;
+  requires_doctor_approval: boolean;
+}
+
+export interface PossibleDiagnosis {
+  name: string;
+  likelihood: string;
+  explanation: string;
+}
+
 interface TriageResponse {
   risk_score: number;
   risk_level: "low" | "moderate" | "high" | "critical";
@@ -23,6 +38,10 @@ interface TriageResponse {
     likelihood: string;
     rationale: string;
   }>;
+  possible_diagnoses?: PossibleDiagnosis[];
+  suggested_medicines?: SuggestedMedicine[];
+  home_remedies?: string[];
+  lifestyle_advice?: string[];
   recommended_actions?: string[];
   ai_summary?: string;
   ai_model?: string | null;
@@ -57,8 +76,8 @@ export async function generateAssessmentForIntake({
     return { error: triage.error } as const;
   }
 
-  const { data: assessment, error: insertError } = await supabase
-    .from("assessments")
+  const { data: assessment, error: insertError } = await (supabase
+    .from("assessments") as any)
     .insert({
       intake_id: intakeId,
       patient_id: patientId,
@@ -66,6 +85,10 @@ export async function generateAssessmentForIntake({
       risk_level: triage.risk_level,
       red_flags: triage.red_flags ?? [],
       differentials: triage.differentials ?? [],
+      possible_diagnoses: triage.possible_diagnoses ?? [],
+      suggested_medicines: triage.suggested_medicines ?? [],
+      home_remedies: triage.home_remedies ?? [],
+      lifestyle_advice: triage.lifestyle_advice ?? [],
       recommended_actions: triage.recommended_actions ?? [],
       ai_summary: triage.ai_summary ?? "",
       ai_model: triage.ai_model ?? null,
