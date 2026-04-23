@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 import { generateAssessmentForIntake } from "@/lib/triage";
 import { Loader2, X, Plus } from "lucide-react";
+import { BodyDiagram } from "@/components/BodyDiagram";
 
 export const Route = createFileRoute("/patient/new")({
   head: () => ({ meta: [{ title: "New Assessment — MediTriage AI" }] }),
@@ -49,6 +50,7 @@ function NewIntake() {
   const [form, setForm] = useState({
     chief_complaint: "",
     symptoms: [] as string[],
+    body_regions: [] as string[],
     symptomInput: "",
     duration_days: 1,
     severity: 5,
@@ -65,6 +67,14 @@ function NewIntake() {
     respiratory_rate: "" as string,
     spo2: "" as string,
   });
+
+  const toggleRegion = (id: string) =>
+    setForm((f) => ({
+      ...f,
+      body_regions: f.body_regions.includes(id)
+        ? f.body_regions.filter((r) => r !== id)
+        : [...f.body_regions, id],
+    }));
 
   const addSymptom = (s: string) => {
     const v = s.trim();
@@ -92,6 +102,7 @@ function NewIntake() {
     const payload = {
       chief_complaint: form.chief_complaint,
       symptoms: form.symptoms,
+      body_regions: form.body_regions,
       duration_days: form.duration_days,
       severity: form.severity,
       age: form.age,
@@ -111,8 +122,8 @@ function NewIntake() {
 
     setLoading(true);
 
-    const { data: intake, error: intakeError } = await supabase
-      .from("patient_intakes")
+    const { data: intake, error: intakeError } = await (supabase
+      .from("patient_intakes") as any)
       .insert({ ...payload, patient_id: user!.id })
       .select()
       .single();
