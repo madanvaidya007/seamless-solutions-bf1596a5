@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useEffect, useState } from "react";
+import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Card } from "@/components/ui/card";
@@ -14,7 +15,13 @@ import { CalendarClock, Loader2, Plus, Stethoscope, Check, X, Video, Phone, MapP
 import { format } from "date-fns";
 import { toast } from "sonner";
 
+const apptSearchSchema = z.object({
+  intake: z.string().optional(),
+  complaint: z.string().optional(),
+});
+
 export const Route = createFileRoute("/appointments")({
+  validateSearch: (s) => apptSearchSchema.parse(s),
   head: () => ({ meta: [{ title: "Appointments — MediTriage AI" }] }),
   component: () => (
     <RequireAuth>
@@ -51,14 +58,15 @@ const ModeIcon = ({ mode }: { mode: Appt["mode"] }) =>
 
 function AppointmentsPage() {
   const { user, role } = useAuth();
+  const search = Route.useSearch();
   const [items, setItems] = useState<Appt[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showNew, setShowNew] = useState(false);
+  const [showNew, setShowNew] = useState(Boolean(search.intake));
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({
     preferred_at: "",
     mode: "in_person" as Appt["mode"],
-    reason: "",
+    reason: search.complaint ? `Follow-up on: ${search.complaint}` : "",
   });
 
   const isClinician = role === "doctor" || role === "admin";
@@ -97,8 +105,9 @@ function AppointmentsPage() {
     e.preventDefault();
     if (!user || !form.preferred_at) return;
     setCreating(true);
-    const { error } = await supabase.from("appointments").insert({
+    const { error } = await (supabase.from("appointments") as any).insert({
       patient_id: user.id,
+      intake_id: search.intake ?? null,
       preferred_at: new Date(form.preferred_at).toISOString(),
       mode: form.mode,
       reason: form.reason || null,
