@@ -41,12 +41,10 @@ function computeRule(input: any) {
   const breakdown: Record<string, number> = {};
   const redFlags: string[] = [];
 
-  // severity
   const sevPts = severity * 4;
   score += sevPts;
   breakdown["severity"] = sevPts;
 
-  // red flags
   for (const sym of symptoms) {
     for (const [flag, pts] of Object.entries(RED_FLAG_SYMPTOMS)) {
       if (sym.includes(flag)) {
@@ -57,7 +55,6 @@ function computeRule(input: any) {
     }
   }
 
-  // age extremes
   if (age >= 65) {
     score += 10;
     breakdown["age_65+"] = 10;
@@ -66,40 +63,19 @@ function computeRule(input: any) {
     breakdown["age_<=5"] = 12;
   }
 
-  // vitals
   const hr = Number(vitals.heart_rate);
   const sbp = Number(vitals.systolic_bp);
   const temp = Number(vitals.temperature_c);
   const spo2 = Number(vitals.spo2);
   const rr = Number(vitals.respiratory_rate);
 
-  if (hr && (hr > 120 || hr < 40)) {
-    score += 15;
-    breakdown["abnormal_hr"] = 15;
-  }
-  if (sbp && (sbp < 90 || sbp > 180)) {
-    score += 15;
-    breakdown["abnormal_bp"] = 15;
-  }
-  if (temp && (temp >= 39.5 || temp <= 35)) {
-    score += 12;
-    breakdown["abnormal_temp"] = 12;
-  }
-  if (spo2 && spo2 < 92) {
-    score += 20;
-    breakdown["low_spo2"] = 20;
-    redFlags.push("low oxygen saturation");
-  }
-  if (rr && (rr > 24 || rr < 10)) {
-    score += 10;
-    breakdown["abnormal_rr"] = 10;
-  }
+  if (hr && (hr > 120 || hr < 40)) { score += 15; breakdown["abnormal_hr"] = 15; }
+  if (sbp && (sbp < 90 || sbp > 180)) { score += 15; breakdown["abnormal_bp"] = 15; }
+  if (temp && (temp >= 39.5 || temp <= 35)) { score += 12; breakdown["abnormal_temp"] = 12; }
+  if (spo2 && spo2 < 92) { score += 20; breakdown["low_spo2"] = 20; redFlags.push("low oxygen saturation"); }
+  if (rr && (rr > 24 || rr < 10)) { score += 10; breakdown["abnormal_rr"] = 10; }
 
-  // duration
-  if (duration >= 14) {
-    score += 5;
-    breakdown["chronic"] = 5;
-  }
+  if (duration >= 14) { score += 5; breakdown["chronic"] = 5; }
 
   score = Math.min(100, Math.round(score));
 
@@ -133,19 +109,35 @@ serve(async (req) => {
     let aiData: {
       ai_summary: string;
       differentials: { condition: string; likelihood: string; rationale: string }[];
+      possible_diagnoses: { name: string; likelihood: string; explanation: string }[];
+      suggested_medicines: { name: string; type: string; dosage: string; purpose: string; requires_doctor_approval: boolean }[];
+      home_remedies: string[];
+      lifestyle_advice: string[];
       recommended_actions: string[];
     } = {
       ai_summary: "AI explanation unavailable.",
       differentials: [],
+      possible_diagnoses: [],
+      suggested_medicines: [],
+      home_remedies: [],
+      lifestyle_advice: [],
       recommended_actions: [],
     };
 
     if (LOVABLE_API_KEY) {
-      const systemPrompt = `You are a clinical decision support assistant. You DO NOT diagnose. You provide differential considerations and triage suggestions to assist a licensed clinician. Always include the disclaimer that this is not a medical diagnosis. Be concise and structured.`;
+      const systemPrompt = `You are a clinical decision support assistant for a hospital triage system.
+You DO NOT diagnose. You provide structured suggestions to assist a licensed clinician.
+
+Rules:
+- Always flag any prescription-only medicine with requires_doctor_approval = true.
+- Over-the-counter (OTC) options like paracetamol, ibuprofen, ORS, antacids, saline nasal spray may have requires_doctor_approval = false, but still safe-dose only.
+- Home remedies must be safe, evidence-aligned (rest, hydration, warm fluids, steam inhalation, etc.). Never suggest unproven or risky remedies.
+- Be concise, structured, and patient-friendly.`;
 
       const userPrompt = `Patient case:
 - Chief complaint: ${input.chief_complaint}
 - Symptoms: ${input.symptoms.join(", ")}
+- Affected body regions: ${(input.body_regions || []).join(", ") || "not specified"}
 - Severity (1-10): ${input.severity}
 - Duration (days): ${input.duration_days}
 - Age: ${input.age}, Sex: ${input.sex}
@@ -156,7 +148,14 @@ serve(async (req) => {
 
 Rule-based triage produced risk score ${rule.score}/100 (${rule.level}). Red flags: ${rule.redFlags.join(", ") || "none"}.
 
-Provide differential considerations and recommended next actions.`;
+Provide:
+1. ai_summary — short paragraph for the clinician
+2. possible_diagnoses — 2-4 most likely conditions with likelihood (low/moderate/high) and a one-line explanation
+3. differentials — alternative considerations (use the same shape with condition/likelihood/rationale)
+4. suggested_medicines — 2-5 medicines. Mark Rx items requires_doctor_approval=true. Include type ("OTC" or "Prescription"), typical adult dosage, and purpose.
+5. home_remedies — 3-6 safe self-care steps
+6. lifestyle_advice — 3-5 lifestyle recommendations
+7. recommended_actions — clinical next steps (tests to order, when to escalate)`;
 
       try {
         const aiRes = await fetch(
@@ -183,30 +182,58 @@ Provide differential considerations and recommended next actions.`;
                       type: "object",
                       properties: {
                         ai_summary: { type: "string" },
+                        possible_diagnoses: {
+                          type: "array",
+                          items: {
+                            type: "object",
+                            properties: {
+                              name: { type: "string" },
+                              likelihood: { type: "string", enum: ["low", "moderate", "high"] },
+                              explanation: { type: "string" },
+                            },
+                            required: ["name", "likelihood", "explanation"],
+                            additionalProperties: false,
+                          },
+                        },
                         differentials: {
                           type: "array",
                           items: {
                             type: "object",
                             properties: {
                               condition: { type: "string" },
-                              likelihood: {
-                                type: "string",
-                                enum: ["low", "moderate", "high"],
-                              },
+                              likelihood: { type: "string", enum: ["low", "moderate", "high"] },
                               rationale: { type: "string" },
                             },
                             required: ["condition", "likelihood", "rationale"],
                             additionalProperties: false,
                           },
                         },
-                        recommended_actions: {
+                        suggested_medicines: {
                           type: "array",
-                          items: { type: "string" },
+                          items: {
+                            type: "object",
+                            properties: {
+                              name: { type: "string" },
+                              type: { type: "string", enum: ["OTC", "Prescription"] },
+                              dosage: { type: "string" },
+                              purpose: { type: "string" },
+                              requires_doctor_approval: { type: "boolean" },
+                            },
+                            required: ["name", "type", "dosage", "purpose", "requires_doctor_approval"],
+                            additionalProperties: false,
+                          },
                         },
+                        home_remedies: { type: "array", items: { type: "string" } },
+                        lifestyle_advice: { type: "array", items: { type: "string" } },
+                        recommended_actions: { type: "array", items: { type: "string" } },
                       },
                       required: [
                         "ai_summary",
+                        "possible_diagnoses",
                         "differentials",
+                        "suggested_medicines",
+                        "home_remedies",
+                        "lifestyle_advice",
                         "recommended_actions",
                       ],
                       additionalProperties: false,
@@ -239,7 +266,10 @@ Provide differential considerations and recommended next actions.`;
           const json = await aiRes.json();
           const call =
             json.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
-          if (call) aiData = JSON.parse(call);
+          if (call) {
+            const parsed = JSON.parse(call);
+            aiData = { ...aiData, ...parsed };
+          }
         } else {
           console.error("AI gateway error", aiRes.status, await aiRes.text());
         }
