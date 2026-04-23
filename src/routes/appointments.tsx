@@ -118,7 +118,7 @@ function AppointmentsPage() {
     const patch: Record<string, unknown> = { status };
     if (isClinician && user) patch.doctor_id = user.id;
     if (doctor_message !== undefined) patch.doctor_message = doctor_message;
-    const { error } = await supabase.from("appointments").update(patch).eq("id", id);
+    const { error } = await (supabase.from("appointments") as any).update(patch).eq("id", id);
     if (error) {
       toast.error(error.message);
       return;

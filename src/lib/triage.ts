@@ -76,8 +76,8 @@ export async function generateAssessmentForIntake({
     return { error: triage.error } as const;
   }
 
-  const { data: assessment, error: insertError } = await supabase
-    .from("assessments")
+  const { data: assessment, error: insertError } = await (supabase
+    .from("assessments") as any)
     .insert({
       intake_id: intakeId,
       patient_id: patientId,
