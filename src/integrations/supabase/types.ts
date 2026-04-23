@@ -14,48 +14,102 @@ export type Database = {
   }
   public: {
     Tables: {
+      appointments: {
+        Row: {
+          created_at: string
+          doctor_id: string | null
+          doctor_message: string | null
+          id: string
+          intake_id: string | null
+          mode: Database["public"]["Enums"]["appointment_mode"]
+          patient_id: string
+          preferred_at: string
+          reason: string | null
+          status: Database["public"]["Enums"]["appointment_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          doctor_id?: string | null
+          doctor_message?: string | null
+          id?: string
+          intake_id?: string | null
+          mode?: Database["public"]["Enums"]["appointment_mode"]
+          patient_id: string
+          preferred_at: string
+          reason?: string | null
+          status?: Database["public"]["Enums"]["appointment_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          doctor_id?: string | null
+          doctor_message?: string | null
+          id?: string
+          intake_id?: string | null
+          mode?: Database["public"]["Enums"]["appointment_mode"]
+          patient_id?: string
+          preferred_at?: string
+          reason?: string | null
+          status?: Database["public"]["Enums"]["appointment_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       assessments: {
         Row: {
           ai_model: string | null
           ai_summary: string | null
           created_at: string
           differentials: Json | null
+          home_remedies: string[]
           id: string
           intake_id: string
+          lifestyle_advice: string[]
           patient_id: string
+          possible_diagnoses: Json
           recommended_actions: string[] | null
           red_flags: string[] | null
           risk_level: Database["public"]["Enums"]["risk_level"]
           risk_score: number
           rule_breakdown: Json | null
+          suggested_medicines: Json
         }
         Insert: {
           ai_model?: string | null
           ai_summary?: string | null
           created_at?: string
           differentials?: Json | null
+          home_remedies?: string[]
           id?: string
           intake_id: string
+          lifestyle_advice?: string[]
           patient_id: string
+          possible_diagnoses?: Json
           recommended_actions?: string[] | null
           red_flags?: string[] | null
           risk_level: Database["public"]["Enums"]["risk_level"]
           risk_score: number
           rule_breakdown?: Json | null
+          suggested_medicines?: Json
         }
         Update: {
           ai_model?: string | null
           ai_summary?: string | null
           created_at?: string
           differentials?: Json | null
+          home_remedies?: string[]
           id?: string
           intake_id?: string
+          lifestyle_advice?: string[]
           patient_id?: string
+          possible_diagnoses?: Json
           recommended_actions?: string[] | null
           red_flags?: string[] | null
           risk_level?: Database["public"]["Enums"]["risk_level"]
           risk_score?: number
           rule_breakdown?: Json | null
+          suggested_medicines?: Json
         }
         Relationships: [
           {
@@ -99,6 +153,8 @@ export type Database = {
       }
       doctor_notes: {
         Row: {
+          approved_at: string | null
+          approved_medicines: Json
           created_at: string
           diagnosis: string | null
           doctor_id: string
@@ -110,6 +166,8 @@ export type Database = {
           treatment_plan: string | null
         }
         Insert: {
+          approved_at?: string | null
+          approved_medicines?: Json
           created_at?: string
           diagnosis?: string | null
           doctor_id: string
@@ -121,6 +179,8 @@ export type Database = {
           treatment_plan?: string | null
         }
         Update: {
+          approved_at?: string | null
+          approved_medicines?: Json
           created_at?: string
           diagnosis?: string | null
           doctor_id?: string
@@ -145,6 +205,7 @@ export type Database = {
         Row: {
           age: number | null
           allergies: string | null
+          body_regions: string[]
           chief_complaint: string
           created_at: string
           current_medications: string | null
@@ -163,6 +224,7 @@ export type Database = {
         Insert: {
           age?: number | null
           allergies?: string | null
+          body_regions?: string[]
           chief_complaint: string
           created_at?: string
           current_medications?: string | null
@@ -181,6 +243,7 @@ export type Database = {
         Update: {
           age?: number | null
           allergies?: string | null
+          body_regions?: string[]
           chief_complaint?: string
           created_at?: string
           current_medications?: string | null
@@ -271,6 +334,13 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "doctor" | "patient"
+      appointment_mode: "in_person" | "video" | "phone"
+      appointment_status:
+        | "requested"
+        | "confirmed"
+        | "declined"
+        | "completed"
+        | "cancelled"
       intake_status: "pending" | "in_review" | "completed" | "archived"
       risk_level: "low" | "moderate" | "high" | "critical"
     }
@@ -401,6 +471,14 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "doctor", "patient"],
+      appointment_mode: ["in_person", "video", "phone"],
+      appointment_status: [
+        "requested",
+        "confirmed",
+        "declined",
+        "completed",
+        "cancelled",
+      ],
       intake_status: ["pending", "in_review", "completed", "archived"],
       risk_level: ["low", "moderate", "high", "critical"],
     },
