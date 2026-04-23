@@ -3,6 +3,7 @@ import { z } from "zod";
 export const intakeSchema = z.object({
   chief_complaint: z.string().trim().min(3).max(500),
   symptoms: z.array(z.string().trim().min(1).max(80)).min(1).max(30),
+  body_regions: z.array(z.string().trim().min(1).max(40)).max(20).optional(),
   duration_days: z.number().int().min(0).max(3650),
   severity: z.number().int().min(1).max(10),
   age: z.number().int().min(0).max(130),
