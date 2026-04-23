@@ -11,6 +11,7 @@ import {
   LogOut,
   HelpCircle,
   Bell,
+  CalendarClock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -38,10 +39,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   if (role === "patient") {
     items.push({ to: "/patient", label: "My Cases", icon: LayoutDashboard });
     items.push({ to: "/patient/new", label: "New Assessment", icon: PlusCircle });
+    items.push({ to: "/appointments", label: "Appointments", icon: CalendarClock });
   }
   if (role === "doctor" || role === "admin") {
     items.push({ to: "/doctor", label: "Triage Queue", icon: Stethoscope });
     items.push({ to: "/patient/new", label: "New Intake", icon: PlusCircle });
+    items.push({ to: "/appointments", label: "Appointments", icon: CalendarClock });
   }
   if (role === "admin") {
     items.push({ to: "/admin", label: "Admin", icon: ShieldCheck });
