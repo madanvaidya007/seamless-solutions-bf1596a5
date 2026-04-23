@@ -291,6 +291,29 @@ function NewIntake() {
           </div>
         </Card>
 
+        {/* Body diagram */}
+        <Card className="p-6">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div className="md:max-w-xs">
+              <h2 className="font-medium">Where does it hurt?</h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Tap any region on the body to mark it as affected. This helps the AI focus its triage and shows up on your hospital report.
+              </p>
+              {form.body_regions.length > 0 && (
+                <p className="mt-3 text-xs">
+                  <span className="text-muted-foreground">Selected: </span>
+                  <span className="font-medium text-primary">{form.body_regions.length} region{form.body_regions.length > 1 ? "s" : ""}</span>
+                </p>
+              )}
+            </div>
+            <BodyDiagram
+              selected={form.body_regions}
+              onToggle={toggleRegion}
+              className="md:flex-1"
+            />
+          </div>
+        </Card>
+
         <Card className="space-y-4 p-6">
           <div>
             <h2 className="font-medium">Vitals (optional)</h2>
